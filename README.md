@@ -4,14 +4,14 @@
   <img src="https://img.shields.io/badge/Model-unsloth/gemma--4--E2B--it-blue" alt="Model">
   <img src="https://img.shields.io/badge/Framework-Unsloth-green" alt="Framework">
   <img src="https://img.shields.io/badge/API-FastModel-teal" alt="API">
-  <img src="https://img.shields.io/badge/Method-LoRA_(attn+MLP)-orange" alt="Method">
-  <img src="https://img.shields.io/badge/Precision-FP16-yellow" alt="Precision">
+  <img src="https://img.shields.io/badge/Method-QLoRA_(4bit_NF4)-orange" alt="Method">
+  <img src="https://img.shields.io/badge/Precision-4bit_NF4-yellow" alt="Precision">
   <img src="https://img.shields.io/badge/LR-2e--4-yellow" alt="LR">
   <img src="https://img.shields.io/badge/Dataset-oasst1--21k--ja_(8k_filtered)-red" alt="Dataset">
   <img src="https://img.shields.io/badge/Platform-Google_Colab-F9AB00" alt="Platform">
 </p>
 
-Unsloth 最適化版 `unsloth/gemma-4-E2B-it` の日本語性能を **破滅的忘却（catastrophic forgetting）を回避** しながら底上げするための Google Colab ノートブックです。Unsloth フレームワークによる高速 LoRA ファインチューニングと、**学習前後の定量評価** による忘却モニタリングを統合しています。
+Unsloth 最適化版 `unsloth/gemma-4-E2B-it` の日本語性能を **破滅的忘却（catastrophic forgetting）を回避** しながら底上げするための Google Colab ノートブックです。**QLoRA（4bit NF4 量子化 + LoRA アダプタ）** を採用し、T4 (16GB) でも快適に学習できるよう VRAM 使用量を大幅に削減しつつ、Unsloth フレームワークによる高速ファインチューニングと、**学習前後の定量評価** による忘却モニタリングを統合しています。
 
 ---
 
@@ -45,7 +45,7 @@ Gemma 4 E2B は多言語（140+ 言語）対応を謳っていますが、日本
 
 | # | 施策 | 内容 | 効果 |
 |---|------|------|------|
-| 1 | **LoRA（フルチューンではない）** | rank=16 / alpha=32 のアダプタのみ学習 | 元重みを凍結し最小限の差分更新 |
+| 1 | **QLoRA（4bit NF4 量子化 + LoRA）** | ベース重みを4bitで読み込み、rank=16 / alpha=32 のアダプタのみ学習 | 元重みを凍結し最小限の差分更新。VRAM 削減で T4 でも動作 |
 | 2 | **attention + MLP 両方へ適用** | `finetune_attention_modules=True`, `finetune_mlp_modules=True` | 適応範囲を確保しつつ、フリーズ部分で知識保持 |
 | 3 | **視覚層はフリーズ** | `finetune_vision_layers=False` | マルチモーダル能力の保持 |
 | 4 | **学習率 2e-4** | LoRA 標準的な中庸な値 | 過度な重み更新を回避 |
@@ -65,7 +65,7 @@ Gemma 4 E2B は多言語（140+ 言語）対応を謳っていますが、日本
 |---|---|
 | 対象モデル | `unsloth/gemma-4-E2B-it` |
 | API | `FastModel`（マルチモーダル対応） |
-| Precision | FP16（`load_in_4bit=False`） |
+| Precision | **4bit NF4 量子化**（`load_in_4bit=True`） |
 | LoRA Rank | 16 |
 | LoRA Alpha | 32 |
 | LoRA Dropout | 0.05 |
@@ -153,7 +153,7 @@ Gemma 4 は gated model のため、事前に以下を行ってください：
 
 - **Gemma ライセンス**: Gemma は [Gemma Terms of Use](https://ai.google.dev/gemma/terms) に基づき使用してください。
 - **データセットライセンス**: `llm-jp/oasst1-21k-ja` は [Apache 2.0](https://huggingface.co/datasets/llm-jp/oasst1-21k-ja) で公開されています。
-- **GPU メモリ**: T4 (16GB) で動作確認済みの設定にしていますが、メモリ不足の場合は `per_device_train_batch_size` を 1 に下げてください。
+- **GPU メモリ**: **QLoRA 採用により T4 (16GB) で快適動作**します。メモリ不足の場合は `per_device_train_batch_size` を 1 に下げてください。
 - **Unsloth バージョン**: Gemma 4 サポートが含まれる最新版を使用してください（インストールセルで公式レシピ通りにインストール）。
 - **マルチモーダル**: 本ノートブックはテキストのみ学習します（`finetune_vision_layers=False`）。視覚/音声も学習したい場合はこのフラグを `True` に変更してください。
 
